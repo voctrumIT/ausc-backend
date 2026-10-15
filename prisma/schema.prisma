@@ -206,3 +206,21 @@ model ContactMessage {
 
   @@map("contactUs")
 }
+
+model Blog {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String?  @unique
+  excerpt     String
+  content     String
+  author      String   @default("AuSC Admissions")
+  date        String?
+  image       String
+  category    String
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("blogs")
+}
+

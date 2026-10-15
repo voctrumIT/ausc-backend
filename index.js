@@ -3,6 +3,7 @@ import cors from "cors";
 import contactus from "./routes/contactus.route.js";
 import student from "./routes/student.route.js";
 import account from "./routes/user.route.js";
+import blogs from "./routes/blogs.route.js";
 import dotenv from "dotenv";
 import cookieParser from 'cookie-parser';
 
@@ -46,6 +47,8 @@ app.use(cookieParser());
 app.use("/api/contactus", contactus);
 app.use("/api/student", student);
 app.use('/api/account', account);
+app.use('/api/blogs', blogs);
+
 
 // Debug and Health routes at the very top
 app.get("/api/health", (req, res) => {
