@@ -228,7 +228,7 @@ model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  policy    String   @default("fullAccess")
+  policies  String[]
   createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

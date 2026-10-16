@@ -3,11 +3,11 @@ import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma.lib.js";
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-const JWT_SECRET = process.env.JWT_SECRET || "ausc_admin_jwt_secret_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
 /**
  * Admin Login
- * Validates credentials, creates a single JWT token valid for 6 hours,
+ * Validates credentials, creates a single JWT token valid for 6 hours with policies array,
  * and sets it in an HTTP-only cookie.
  */
 export const adminLogin = async (req, res) => {
@@ -37,7 +37,7 @@ export const adminLogin = async (req, res) => {
           data: {
             email: normalizedEmail,
             password: hashedPassword,
-            policy: "fullAccess",
+            policies: ["fullAccess"],
             createdBy: "system_bootstrap",
           },
         });
@@ -59,19 +59,24 @@ export const adminLogin = async (req, res) => {
       }
     }
 
+    const adminPolicies = Array.isArray(admin.policies) && admin.policies.length > 0
+      ? admin.policies
+      : ["fullAccess"];
+
     // Issue single JWT token with 6 hours validity
     const token = jwt.sign(
       {
         adminId: admin.id,
+        id: admin.id,
         email: admin.email,
-        policy: admin.policy,
+        policies: adminPolicies,
       },
       JWT_SECRET,
       { expiresIn: "6h" }
     );
 
-    // Store in a single cookie
-    res.cookie("admin_token", token, {
+    // Store in cookie
+    res.cookie("ausc_root_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -85,7 +90,7 @@ export const adminLogin = async (req, res) => {
       admin: {
         id: admin.id,
         email: admin.email,
-        policy: admin.policy,
+        policies: adminPolicies,
         createdAt: admin.createdAt,
         createdBy: admin.createdBy,
       },
@@ -101,11 +106,11 @@ export const adminLogin = async (req, res) => {
 
 /**
  * Admin Logout
- * Clears the single admin cookie
+ * Clears the admin session cookie
  */
 export const adminLogout = async (req, res) => {
   try {
-    res.clearCookie("admin_token", {
+    res.clearCookie("ausc_root_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -130,7 +135,7 @@ export const adminLogout = async (req, res) => {
  */
 export const getAdminProfile = async (req, res) => {
   try {
-    const adminId = req.admin?.adminId;
+    const adminId = req.user?.adminId || req.user?.id || req.admin?.adminId || req.admin?.id;
 
     if (!adminId) {
       return res.status(401).json({
@@ -144,7 +149,7 @@ export const getAdminProfile = async (req, res) => {
       select: {
         id: true,
         email: true,
-        policy: true,
+        policies: true,
         createdBy: true,
         createdAt: true,
         updatedAt: true,
@@ -160,7 +165,10 @@ export const getAdminProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      admin,
+      admin: {
+        ...admin,
+        policies: Array.isArray(admin.policies) ? admin.policies : ["fullAccess"],
+      },
     });
   } catch (error) {
     console.error("Error in getAdminProfile controller:", error);
@@ -176,7 +184,7 @@ export const getAdminProfile = async (req, res) => {
  */
 export const createAdmin = async (req, res) => {
   try {
-    const { email, password, policy, createdBy } = req.body;
+    const { email, password, policies, createdBy } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -198,20 +206,26 @@ export const createAdmin = async (req, res) => {
       });
     }
 
+    const adminPolicies = Array.isArray(policies) && policies.length > 0
+      ? policies
+      : policies
+      ? [policies]
+      : ["fullAccess"];
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const creator = req.admin?.email || createdBy || "superadmin";
+    const creator = req.user?.email || req.admin?.email || createdBy || "superadmin";
 
     const newAdmin = await prisma.admin.create({
       data: {
         email: normalizedEmail,
         password: hashedPassword,
-        policy: policy || "fullAccess",
+        policies: adminPolicies,
         createdBy: creator,
       },
       select: {
         id: true,
         email: true,
-        policy: true,
+        policies: true,
         createdBy: true,
         createdAt: true,
       },

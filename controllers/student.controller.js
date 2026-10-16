@@ -277,14 +277,19 @@ export const getStudentApplications = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Optional search filter across core fields
+        // Search filter across core fields
         const whereClause = search ? {
             OR: [
                 { givenName: { contains: search, mode: 'insensitive' } },
                 { familyName: { contains: search, mode: 'insensitive' } },
                 { emailAddress: { contains: search, mode: 'insensitive' } },
                 { mobile: { contains: search, mode: 'insensitive' } },
-                { passportNumber: { contains: search, mode: 'insensitive' } }
+                { passportNumber: { contains: search, mode: 'insensitive' } },
+                { countryOfCitizenship: { contains: search, mode: 'insensitive' } },
+                { currentLocation: { contains: search, mode: 'insensitive' } },
+                { businessName: { contains: search, mode: 'insensitive' } },
+                { agentName: { contains: search, mode: 'insensitive' } },
+                { applicationType: { contains: search, mode: 'insensitive' } }
             ]
         } : {};
 
@@ -322,6 +327,59 @@ export const getStudentApplications = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'An error occurred while fetching student applications'
+        });
+    }
+};
+
+export const getStudentApplicationById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const student = await prisma.studentApplication.findUnique({
+            where: { id }
+        });
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                error: 'Student application not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: student
+        });
+    } catch (error) {
+        console.error('Error in getStudentApplicationById:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch student application'
+        });
+    }
+};
+
+export const deleteStudentApplication = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const existing = await prisma.studentApplication.findUnique({ where: { id } });
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: 'Student application not found'
+            });
+        }
+
+        await prisma.studentApplication.delete({ where: { id } });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Student application deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error in deleteStudentApplication:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to delete student application'
         });
     }
 };

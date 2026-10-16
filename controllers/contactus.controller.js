@@ -273,7 +273,7 @@ export const agentRegistrationForm = async (req, res) => {
 
 export const getContactMessages = async (req, res) => {
     try {
-        let { page = 1, limit = 10 } = req.query;
+        let { page = 1, limit = 10, search = '' } = req.query;
 
         // Convert query parameters to integers
         page = parseInt(page, 10);
@@ -285,16 +285,28 @@ export const getContactMessages = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
+        const whereClause = search
+            ? {
+                  OR: [
+                      { name: { contains: search, mode: 'insensitive' } },
+                      { email: { contains: search, mode: 'insensitive' } },
+                      { phone: { contains: search, mode: 'insensitive' } },
+                      { message: { contains: search, mode: 'insensitive' } },
+                  ],
+              }
+            : {};
+
         // Fetch paginated records and total count concurrently
         const [messages, totalCount] = await Promise.all([
             prisma.contactMessage.findMany({
+                where: whereClause,
                 skip,
                 take: limit,
                 orderBy: {
                     createdAt: 'desc'
                 }
             }),
-            prisma.contactMessage.count()
+            prisma.contactMessage.count({ where: whereClause })
         ]);
 
         const totalPages = Math.ceil(totalCount / limit);
@@ -322,6 +334,59 @@ export const getContactMessages = async (req, res) => {
     }
 };
 
+export const getContactMessageById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const message = await prisma.contactMessage.findUnique({
+            where: { id }
+        });
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                error: 'Contact enquiry not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: message
+        });
+    } catch (error) {
+        console.error('Error in getContactMessageById:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch contact enquiry'
+        });
+    }
+};
+
+export const deleteContactMessage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const existing = await prisma.contactMessage.findUnique({ where: { id } });
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: 'Contact enquiry not found'
+            });
+        }
+
+        await prisma.contactMessage.delete({ where: { id } });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Contact enquiry deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error in deleteContactMessage:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to delete contact enquiry'
+        });
+    }
+};
+
 export const getAgentRegistrations = async (req, res) => {
     try {
         let { page = 1, limit = 10, search = '' } = req.query;
@@ -335,13 +400,19 @@ export const getAgentRegistrations = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Optional search filter across core fields
+        // Search filter across core fields
         const whereClause = search ? {
             OR: [
                 { legalName: { contains: search, mode: 'insensitive' } },
                 { tradingName: { contains: search, mode: 'insensitive' } },
                 { email: { contains: search, mode: 'insensitive' } },
-                { mobile: { contains: search, mode: 'insensitive' } }
+                { mobile: { contains: search, mode: 'insensitive' } },
+                { contactPerson: { contains: search, mode: 'insensitive' } },
+                { ceoName: { contains: search, mode: 'insensitive' } },
+                { headOfficeAddress: { contains: search, mode: 'insensitive' } },
+                { maraNo: { contains: search, mode: 'insensitive' } },
+                { qeacNo: { contains: search, mode: 'insensitive' } },
+                { representingCountries: { contains: search, mode: 'insensitive' } }
             ]
         } : {};
 
@@ -379,6 +450,59 @@ export const getAgentRegistrations = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'An error occurred while fetching agent registrations'
+        });
+    }
+};
+
+export const getAgentRegistrationById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const agent = await prisma.agentRegistration.findUnique({
+            where: { id }
+        });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                error: 'Agent registration not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: agent
+        });
+    } catch (error) {
+        console.error('Error in getAgentRegistrationById:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch agent registration'
+        });
+    }
+};
+
+export const deleteAgentRegistration = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const existing = await prisma.agentRegistration.findUnique({ where: { id } });
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: 'Agent registration not found'
+            });
+        }
+
+        await prisma.agentRegistration.delete({ where: { id } });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Agent registration deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error in deleteAgentRegistration:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to delete agent registration'
         });
     }
 };

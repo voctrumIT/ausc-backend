@@ -5,7 +5,7 @@ import {
   getAdminProfile,
   createAdmin,
 } from "../controllers/admin.controller.js";
-import { isAdminLoggedIn } from "../middlewares/adminAuth.middleware.js";
+import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.post("/login", adminLogin);
 router.post("/logout", adminLogout);
 
 // Protected routes (requires the single 6hr JWT cookie)
-router.get("/me", isAdminLoggedIn, getAdminProfile);
-router.post("/create", isAdminLoggedIn, createAdmin);
+router.get("/me", isLoggedIn, getAdminProfile);
+router.post("/create", isLoggedIn, createAdmin);
 
 export default router;

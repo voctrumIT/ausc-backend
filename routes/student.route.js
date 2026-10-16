@@ -1,5 +1,10 @@
 import express from "express";
-import { studentApplicationForm, getStudentApplications } from "../controllers/student.controller.js";
+import {
+    studentApplicationForm,
+    getStudentApplications,
+    getStudentApplicationById,
+    deleteStudentApplication
+} from "../controllers/student.controller.js";
 import { upload } from "../lib/multer.lib.js";
 import { isLoggedIn, hasAccess } from "../middlewares/auth.middleware.js";
 
@@ -15,5 +20,7 @@ router.post("/application", upload.fields([
 ]), studentApplicationForm);
 
 router.get('/students', isLoggedIn, hasAccess('readAccess'), getStudentApplications);
+router.get('/students/:id', isLoggedIn, hasAccess('readAccess'), getStudentApplicationById);
+router.delete('/students/:id', isLoggedIn, hasAccess('fullAccess'), deleteStudentApplication);
 
 export default router;
