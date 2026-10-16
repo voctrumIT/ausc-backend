@@ -12,6 +12,22 @@ const generateSlug = (text) => {
     .replace(/\-\-+/g, "-");
 };
 
+// Helper to ensure content is saved as proper HTML
+const formatToHtml = (content) => {
+  if (!content) return "";
+  const trimmed = content.trim();
+  // If it already contains HTML tags (e.g. <p>, <h2>, <ul>, etc.)
+  if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Convert plain text with paragraph breaks into clean HTML paragraphs
+  return trimmed
+    .split(/\n\s*\n/)
+    .filter(Boolean)
+    .map((para) => `<p>${para.trim().replace(/\n/g, "<br />")}</p>`)
+    .join("");
+};
+
 // GET /api/blogs
 export const getBlogs = async (req, res) => {
   try {
@@ -163,7 +179,7 @@ export const createBlog = async (req, res) => {
         title,
         slug: finalSlug,
         excerpt,
-        content,
+        content: formatToHtml(content),
         category,
         author: author || "AuSC Admissions",
         date: date || new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
@@ -215,7 +231,7 @@ export const updateBlog = async (req, res) => {
         ...(title && { title }),
         ...(slug && { slug }),
         ...(excerpt && { excerpt }),
-        ...(content && { content }),
+        ...(content && { content: formatToHtml(content) }),
         ...(category && { category }),
         ...(author && { author }),
         ...(date && { date }),
