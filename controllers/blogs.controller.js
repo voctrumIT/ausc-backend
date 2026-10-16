@@ -15,7 +15,7 @@ const generateSlug = (text) => {
 // GET /api/blogs
 export const getBlogs = async (req, res) => {
   try {
-    let { page = 1, limit = 50, search = "", category = "" } = req.query;
+    let { page = 1, limit = 50, search = "", category = "", status = "published" } = req.query;
 
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
@@ -25,7 +25,11 @@ export const getBlogs = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const where = {
-      isPublished: true,
+      ...(status === "all"
+        ? {}
+        : status === "draft"
+        ? { isPublished: false }
+        : { isPublished: true }),
       ...(category ? { category: { equals: category, mode: "insensitive" } } : {}),
       ...(search
         ? {
@@ -39,7 +43,7 @@ export const getBlogs = async (req, res) => {
         : {}),
     };
 
-    const [blogs, totalCount] = await Promise.all([
+    const [blogs, totalCount, totalAll, totalPublished, totalDrafts] = await Promise.all([
       prisma.blog.findMany({
         where,
         skip,
@@ -49,6 +53,9 @@ export const getBlogs = async (req, res) => {
         },
       }),
       prisma.blog.count({ where }),
+      prisma.blog.count(),
+      prisma.blog.count({ where: { isPublished: true } }),
+      prisma.blog.count({ where: { isPublished: false } }),
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -63,6 +70,11 @@ export const getBlogs = async (req, res) => {
         limit,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
+      },
+      counts: {
+        all: totalAll,
+        published: totalPublished,
+        draft: totalDrafts,
       },
     });
   } catch (error) {
@@ -156,7 +168,7 @@ export const createBlog = async (req, res) => {
         author: author || "AuSC Admissions",
         date: date || new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
         image,
-        isPublished: isPublished !== undefined ? isPublished === "true" || isPublished === true : true,
+        isPublished: isPublished !== undefined ? String(isPublished).toLowerCase() === "true" : true,
       },
     });
 
@@ -208,7 +220,7 @@ export const updateBlog = async (req, res) => {
         ...(author && { author }),
         ...(date && { date }),
         ...(image && { image }),
-        ...(isPublished !== undefined && { isPublished: isPublished === "true" || isPublished === true }),
+        ...(isPublished !== undefined && { isPublished: String(isPublished).toLowerCase() === "true" }),
       },
     });
 
