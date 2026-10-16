@@ -224,3 +224,16 @@ model Blog {
   @@map("blogs")
 }
 
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  policy    String   @default("fullAccess")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+
