@@ -181,7 +181,7 @@ export const createBlog = async (req, res) => {
     console.error("Error in createBlog:", error);
     return res.status(500).json({
       success: false,
-      error: "Failed to create blog",
+      error: error.message || "Failed to create blog",
     });
   }
 };
@@ -233,7 +233,7 @@ export const updateBlog = async (req, res) => {
     console.error("Error in updateBlog:", error);
     return res.status(500).json({
       success: false,
-      error: "Failed to update blog",
+      error: error.message || "Failed to update blog",
     });
   }
 };
