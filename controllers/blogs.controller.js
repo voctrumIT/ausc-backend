@@ -52,6 +52,7 @@ export const getBlogs = async (req, res) => {
             OR: [
               { title: { contains: search, mode: "insensitive" } },
               { excerpt: { contains: search, mode: "insensitive" } },
+              { aiOverview: { contains: search, mode: "insensitive" } },
               { category: { contains: search, mode: "insensitive" } },
               { author: { contains: search, mode: "insensitive" } },
             ],
@@ -136,7 +137,7 @@ export const getBlogByIdOrSlug = async (req, res) => {
 // POST /api/blogs
 export const createBlog = async (req, res) => {
   try {
-    const { title, excerpt, content, category, author, date, isPublished } = req.body;
+    const { title, excerpt, content, category, author, date, isPublished, aiOverview } = req.body;
     let { slug, image } = req.body;
 
     if (!title || !content || !excerpt || !category) {
@@ -179,6 +180,7 @@ export const createBlog = async (req, res) => {
         title,
         slug: finalSlug,
         excerpt,
+        aiOverview: aiOverview ? formatToHtml(aiOverview) : null,
         content: formatToHtml(content),
         category,
         author: author || "AuSC Admissions",
@@ -206,7 +208,7 @@ export const createBlog = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, excerpt, content, category, author, date, isPublished } = req.body;
+    const { title, excerpt, content, category, author, date, isPublished, aiOverview } = req.body;
     let { slug, image } = req.body;
 
     const existing = await prisma.blog.findUnique({ where: { id } });
@@ -231,6 +233,7 @@ export const updateBlog = async (req, res) => {
         ...(title && { title }),
         ...(slug && { slug }),
         ...(excerpt && { excerpt }),
+        ...(aiOverview !== undefined && { aiOverview: aiOverview ? formatToHtml(aiOverview) : null }),
         ...(content && { content: formatToHtml(content) }),
         ...(category && { category }),
         ...(author && { author }),

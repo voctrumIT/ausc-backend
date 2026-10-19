@@ -212,6 +212,7 @@ model Blog {
   title       String
   slug        String?  @unique
   excerpt     String
+  aiOverview  String?
   content     String
   author      String   @default("AuSC Admissions")
   date        String?
