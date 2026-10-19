@@ -28,6 +28,14 @@ const formatToHtml = (content) => {
     .join("");
 };
 
+// Helper to calculate estimated read time
+const calculateReadTime = (text) => {
+  if (!text) return "3 min read";
+  const words = text.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.ceil(words / 200));
+  return `${minutes} min read`;
+};
+
 // GET /api/blogs
 export const getBlogs = async (req, res) => {
   try {
@@ -55,6 +63,8 @@ export const getBlogs = async (req, res) => {
               { aiOverview: { contains: search, mode: "insensitive" } },
               { category: { contains: search, mode: "insensitive" } },
               { author: { contains: search, mode: "insensitive" } },
+              { metaTitle: { contains: search, mode: "insensitive" } },
+              { metaKeywords: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -137,7 +147,21 @@ export const getBlogByIdOrSlug = async (req, res) => {
 // POST /api/blogs
 export const createBlog = async (req, res) => {
   try {
-    const { title, excerpt, content, category, author, date, isPublished, aiOverview } = req.body;
+    const {
+      title,
+      excerpt,
+      content,
+      category,
+      author,
+      date,
+      isPublished,
+      aiOverview,
+      imageAlt,
+      readTime,
+      metaTitle,
+      metaDescription,
+      metaKeywords,
+    } = req.body;
     let { slug, image } = req.body;
 
     if (!title || !content || !excerpt || !category) {
@@ -175,6 +199,8 @@ export const createBlog = async (req, res) => {
       counter++;
     }
 
+    const calculatedTime = readTime && readTime.trim() ? readTime.trim() : calculateReadTime(content);
+
     const newBlog = await prisma.blog.create({
       data: {
         title,
@@ -186,6 +212,11 @@ export const createBlog = async (req, res) => {
         author: author || "AuSC Admissions",
         date: date || new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
         image,
+        imageAlt: imageAlt && imageAlt.trim() ? imageAlt.trim() : title.trim(),
+        readTime: calculatedTime,
+        metaTitle: metaTitle && metaTitle.trim() ? metaTitle.trim() : null,
+        metaDescription: metaDescription && metaDescription.trim() ? metaDescription.trim() : null,
+        metaKeywords: metaKeywords && metaKeywords.trim() ? metaKeywords.trim() : null,
         isPublished: isPublished !== undefined ? String(isPublished).toLowerCase() === "true" : true,
       },
     });
@@ -208,7 +239,21 @@ export const createBlog = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, excerpt, content, category, author, date, isPublished, aiOverview } = req.body;
+    const {
+      title,
+      excerpt,
+      content,
+      category,
+      author,
+      date,
+      isPublished,
+      aiOverview,
+      imageAlt,
+      readTime,
+      metaTitle,
+      metaDescription,
+      metaKeywords,
+    } = req.body;
     let { slug, image } = req.body;
 
     const existing = await prisma.blog.findUnique({ where: { id } });
@@ -239,6 +284,11 @@ export const updateBlog = async (req, res) => {
         ...(author && { author }),
         ...(date && { date }),
         ...(image && { image }),
+        ...(imageAlt !== undefined && { imageAlt: imageAlt ? imageAlt.trim() : null }),
+        ...(readTime !== undefined && { readTime: readTime ? readTime.trim() : null }),
+        ...(metaTitle !== undefined && { metaTitle: metaTitle ? metaTitle.trim() : null }),
+        ...(metaDescription !== undefined && { metaDescription: metaDescription ? metaDescription.trim() : null }),
+        ...(metaKeywords !== undefined && { metaKeywords: metaKeywords ? metaKeywords.trim() : null }),
         ...(isPublished !== undefined && { isPublished: String(isPublished).toLowerCase() === "true" }),
       },
     });

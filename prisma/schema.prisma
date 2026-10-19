@@ -208,19 +208,24 @@ model ContactMessage {
 }
 
 model Blog {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String?  @unique
-  excerpt     String
-  aiOverview  String?
-  content     String
-  author      String   @default("AuSC Admissions")
-  date        String?
-  image       String
-  category    String
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           String
+  slug            String?  @unique
+  excerpt         String
+  aiOverview      String?
+  content         String
+  author          String   @default("AuSC Admissions")
+  date            String?
+  image           String
+  imageAlt        String?
+  readTime        String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  category        String
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("blogs")
 }
